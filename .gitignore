@@ -139,3 +139,11 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+.idea/misc.xml
+
+.idea/modules.xml
+
+.idea/search-flight-system.iml
+
+.idea/vcs.xml
