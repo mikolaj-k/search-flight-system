@@ -43,11 +43,11 @@ void showMenuChoice();
 
 void toUpper(char *text);
 
-void search(char *from, char *to);
+void search(connections *l, char *from, char *to);
 
-void isDirect(connections *l, char *from, char *to);
+FLIGHT isDirect(connections *l, char *from, char *to);
 
-void isConnected(char *from, char *to);
+void isConnected(connections *l, char *from, char *to);
 
 connections *add(connections *l, char *from, char *to, int distance);
 
@@ -57,9 +57,9 @@ connections *delete(connections *l, int n);
 
 void show(connections *l);
 
-void export();
+void exportData(connections *l);
 
-void import();
+void import(connections *l);
 
 connections *initialize(connections *l); //for testing database
 
@@ -104,7 +104,7 @@ int main(void)
 
                 toUpper(to);
 
-                search(from, to);
+                search(database, from, to);
 
                 break;
 
@@ -144,12 +144,12 @@ int main(void)
                 break;
 
             case '4':
-                import();
+                import(database);
 
                 break;
 
             case '5':
-                export();
+                exportData(database);
 
                 break;
 
@@ -161,7 +161,7 @@ int main(void)
             case 'q':
 
                 printf("Thank you for using our airlines system!\n");
-                exit(-2137);
+                exit(2137);
 
             default:
                 printf("WRONG CHOICE!");
@@ -199,23 +199,50 @@ void toUpper(char text[20])
     }
 }
 
-void search(char *from, char *to)
+void search(connections *l, char *from, char *to)
 {
+    FLIGHT found;
+
     printf("Searching connection from: %s to: %s...\n", from, to);
 
-    isDirect(NULL, from, to);
+    found = isDirect(l, from, to);
 
-    isConnected(from, to);
+    isConnected(l, from, to);
 
 }
 
-void isDirect(connections *l, char *from, char *to)
+FLIGHT isDirect(connections *l, char *from, char *to)
 {
     printf("Searching direct connection from: %s to: %s...\n", from, to);
 
+    connections *tmp = l;
+    FLIGHT found;
+    found.from = "";
+    found.to = "";
+    found.distance = 0;
+
+    while (tmp)
+    {
+        if (strcmp((*tmp).connection.from, from))
+        {
+            if (strcmp((*tmp).connection.to, to))
+            {
+                found.from = (*tmp).connection.from;
+                found.to = (*tmp).connection.to;
+                found.distance = (*tmp).connection.distance;
+
+                printf("found");
+
+                return found;
+            }
+        }
+
+        tmp = (*tmp).next;
+    }
+    return found;
 }
 
-void isConnected(char *from, char *to)
+void isConnected(connections *l, char *from, char *to)
 {
     printf("Searching non-direct connection from: %s to: %s...\n", from, to);
 }
@@ -343,16 +370,84 @@ void show(connections *l)
     }
 }
 
-void export()
+void exportData(connections *l)
 {
+    int lineNumber = 1;
+
     printf("Exporting connections....\n");
+
+    FILE *file = fopen("flights.txt", "w+");
+
+    connections *tmp = l;
+
+    while (tmp)
+    {
+        if ((lineNumber % 3) == 1)
+        {
+            fprintf(file, "%s\n", (*tmp).connection.from);
+            lineNumber++;
+        }
+        if ((lineNumber % 3) == 2)
+        {
+            fprintf(file, "%s\n", (*tmp).connection.to);
+            lineNumber++;
+        }
+        if ((lineNumber % 3) == 0)
+        {
+            fprintf(file, "%i\n", (*tmp).connection.distance);
+            lineNumber++;
+        }
+
+        tmp = (*tmp).next;
+    }
+
+    fclose(file);
 
 }
 
-void import()
+void import(connections *l)
 {
-    printf("Importing connections....\n");
+    int lineNumber = 1;
 
+    char *fromIn;
+    char *toIn;
+    int distanceIn;
+
+    char buf[256];
+
+    FILE *file = fopen("flights.txt", "r");
+
+
+    printf("Importing connectionns....\n");
+
+    while (fgets(buf, sizeof(buf), file))
+    {
+
+        if ((lineNumber % 3) == 1)
+        {
+            fromIn = buf;
+            strtok(fromIn, "\n");
+            printf("from: %s\n", fromIn);
+        }
+        if ((lineNumber % 3) == 2)
+        {
+            toIn = buf;
+            strtok(toIn, "\n");
+            printf("to: %s\n", toIn);
+        }
+        if ((lineNumber % 3) == 0)
+        {
+            distanceIn = atoi(buf);
+            printf("distance: %i\n", distanceIn);
+//TODO: adding
+            //printf("Adding connection from %s, to %s with distance %i", fromIn, toIn, distanceIn);
+            //l = add(l, fromIn, toIn, distanceIn);
+        }
+
+        lineNumber++;
+    }
+
+    fclose(file);
 }
 
 connections *initialize(connections *l)
@@ -360,11 +455,8 @@ connections *initialize(connections *l)
     printf("Initializing database....\n");
 
     l = add(l, "NEW YORK", "LAS VEGAS", 1000);
-
     l = add(l, "WARSAW", "GDANSK", 600);
-
     l = add(l, "WARSAW", "KRAKOW", 800);
-
     l = add(l, "KRAKOW", "KATOWICE", 200);
 
     return l;
