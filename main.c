@@ -39,33 +39,33 @@ typedef struct connections connections;
 * FUNCTION DECLARATIONS
 **********************************************************************/
 
+void toUpper(char *text);
+
 void showMenuChoice();
 
-void toUpper(char *text);
+void exportData(connections *l);
+
+void show(connections *l);
+
+connections *initialize(connections *l); //for testing database
+
+connections *import(connections *l);
 
 connections *search(connections *l, char *from, char *to);
 
 connections *direct(connections *l, char *from, char *to);
 
-void isConnected(connections *l, char *from, char *to);
+connections *nonDirect(connections *l, char *from, char *to);
 
 connections *add(connections *l, char *from, char *to, int distance);
+
+connections *addOneWay(connections *l, char *from, char *to, int distance);
 
 connections *addReverse(connections *l, char *from, char *to, int distance);
 
 connections *insert(connections *l, char *from, char *to, int distance);
 
-connections *addOneWay(connections *l, char *from, char *to, int distance);
-
 connections *delete(connections *l, int n);
-
-void show(connections *l);
-
-void exportData(connections *l);
-
-connections *import(connections *l);
-
-connections *initialize(connections *l); //for testing database
 
 
 /**********************************************************************
@@ -117,7 +117,7 @@ int main(void)
                 }
                 else
                 {
-                    printf("There is no connection beetween %s and %s", from, to);
+                    printf("There is no connection between %s and %s", from, to);
                 }
                 break;
 
@@ -188,6 +188,16 @@ int main(void)
 * FUNCTION DEFINITIONS
 **********************************************************************/
 
+void toUpper(char text[20])
+{
+    int i;
+
+    for (i = 0; i < strlen(text); i++)
+    {
+        text[i] = (char) toupper(text[i]);
+    }
+}
+
 void showMenuChoice()
 {
     printf("\nWelcome in our airlines system.\n");
@@ -202,14 +212,126 @@ void showMenuChoice()
     printf("What do you want to do: ");
 }
 
-void toUpper(char text[20])
+void exportData(connections *l)
 {
-    int i;
+    int lineNumber = 1;
 
-    for (i = 0; i < strlen(text); i++)
+    printf("Exporting connections....\n");
+
+    FILE *file = fopen("flights.txt", "w+");
+
+    connections *tmp = l;
+
+    while (tmp)
     {
-        text[i] = (char) toupper(text[i]);
+        if ((lineNumber % 3) == 1)
+        {
+            fprintf(file, "%s\n", (*tmp).connection.from);
+            lineNumber++;
+        }
+        if ((lineNumber % 3) == 2)
+        {
+            fprintf(file, "%s\n", (*tmp).connection.to);
+            lineNumber++;
+        }
+        if ((lineNumber % 3) == 0)
+        {
+            fprintf(file, "%i\n", (*tmp).connection.distance);
+            lineNumber++;
+        }
+
+        tmp = (*tmp).next;
     }
+
+    fclose(file);
+
+}
+
+void show(connections *l)
+{
+    int numberOfFlights = 1;
+
+    printf("Showing connections...\n");
+
+    connections *tmp = l;
+
+    printf("AVAILABLE CONNECTIONS: \n");
+
+    while (tmp)
+    {
+        printf("%i.\n", numberOfFlights);
+        printf("\tFrom: %s\n", (*tmp).connection.from);
+        printf("\tTo: %s\n", (*tmp).connection.to);
+        printf("\tDistance: %i\n", (*tmp).connection.distance);
+        printf("\n");
+
+        numberOfFlights++;
+
+        tmp = (*tmp).next;
+    }
+}
+
+connections *initialize(connections *l)
+{
+    printf("Initializing database....\n");
+
+    l = add(l, "NEW YORK", "LAS VEGAS", 1000);
+    l = add(l, "WARSAW", "GDANSK", 600);
+    l = add(l, "WARSAW", "KRAKOW", 800);
+    l = add(l, "KRAKOW", "KATOWICE", 200);
+
+    return l;
+}
+
+connections *import(connections *l)
+{
+    int lineNumber = 1;
+
+    char *fromIn;
+    char *toIn;
+    int distanceIn;
+
+    fromIn = malloc(sizeof(char *));
+    toIn = malloc(sizeof(char *));
+
+    char buf[256];
+
+    FILE *file = fopen("flights.txt", "r");
+
+    printf("Importing connectionns....\n");
+
+    while (fgets(buf, sizeof(buf), file))
+    {
+        if ((lineNumber % 3) == 1)
+        {
+            strcpy(fromIn, buf);
+
+            strtok(fromIn, "\n");
+            printf("from: %s\n", fromIn);
+        }
+        if ((lineNumber % 3) == 2)
+        {
+            strcpy(toIn, buf);
+
+            strtok(toIn, "\n");
+            printf("to: %s\n", toIn);
+        }
+        if ((lineNumber % 3) == 0)
+        {
+            distanceIn = atoi(buf);
+            printf("distance: %i\n", distanceIn);
+
+            printf("Adding connection from %s, to %s with distance %i\n", fromIn, toIn, distanceIn);
+
+            l = add(l, fromIn, toIn, distanceIn);
+        }
+
+        lineNumber++;
+    }
+
+    fclose(file);
+
+    return l;
 }
 
 connections *search(connections *l, char *from, char *to)
@@ -222,7 +344,7 @@ connections *search(connections *l, char *from, char *to)
 
     if (found == NULL)
     {
-        isConnected(l, from, to);
+        found = nonDirect(l, from, to);
     }
 
     return found;
@@ -257,9 +379,11 @@ connections *direct(connections *l, char *from, char *to)
     return found;
 }
 
-void isConnected(connections *l, char *from, char *to)
+connections *nonDirect(connections *l, char *from, char *to)
 {
     printf("Searching non-direct connection from: %s to: %s...\n", from, to);
+
+    return NULL;
 }
 
 connections *add(connections *l, char *from, char *to, int distance)
@@ -282,6 +406,36 @@ connections *add(connections *l, char *from, char *to, int distance)
     }
 
     return l;
+}
+
+connections *addOneWay(connections *l, char *from, char *to, int distance)
+{
+    FLIGHT new;
+
+    new.from = from;
+    new.to = to;
+    new.distance = distance;
+    new.skip = 0;
+
+    //printf("Adding connection from: %s to: %s with distance: %i...\n", new.from, new.to, new.distance);
+
+    connections *tmp;
+
+    tmp = (connections *) malloc(sizeof(connections));
+
+    if (tmp == NULL)
+    {
+        printf("MEMORY PROBLEM. CONTACT IT SUPPORT!");
+        exit(-1);
+    }
+
+    (*tmp).connection.from = new.from;
+    (*tmp).connection.to = new.to;
+    (*tmp).connection.distance = new.distance;
+    (*tmp).next = l;
+
+
+    return tmp;
 }
 
 connections *addReverse(connections *l, char *from, char *to, int distance)
@@ -353,37 +507,6 @@ connections *insert(connections *l, char *from, char *to, int distance)
     return l;
 }
 
-connections *addOneWay(connections *l, char *from, char *to, int distance)
-{
-    FLIGHT new;
-
-    new.from = from;
-    new.to = to;
-    new.distance = distance;
-    new.skip = 0;
-
-    //printf("Adding connection from: %s to: %s with distance: %i...\n", new.from, new.to, new.distance);
-
-    connections *tmp;
-
-    tmp = (connections *) malloc(sizeof(connections));
-
-    if (tmp == NULL)
-    {
-        printf("MEMORY PROBLEM. CONTACT IT SUPPORT!");
-        exit(-1);
-    }
-
-    (*tmp).connection.from = new.from;
-    (*tmp).connection.to = new.to;
-    (*tmp).connection.distance = new.distance;
-    (*tmp).next = l;
-
-
-    return tmp;
-}
-
-
 connections *delete(connections *l, int n)
 {
     connections *pom, *poprz = NULL;
@@ -428,129 +551,5 @@ connections *delete(connections *l, int n)
 
     return l;
 }
-
-
-void show(connections *l)
-{
-    int numberOfFlights = 1;
-
-    printf("Showing connections...\n");
-
-    connections *tmp = l;
-
-    printf("AVAILABLE CONNECTIONS: \n");
-
-    while (tmp)
-    {
-        printf("%i.\n", numberOfFlights);
-        printf("\tFrom: %s\n", (*tmp).connection.from);
-        printf("\tTo: %s\n", (*tmp).connection.to);
-        printf("\tDistance: %i\n", (*tmp).connection.distance);
-        printf("\n");
-
-        numberOfFlights++;
-
-        tmp = (*tmp).next;
-    }
-}
-
-void exportData(connections *l)
-{
-    int lineNumber = 1;
-
-    printf("Exporting connections....\n");
-
-    FILE *file = fopen("flights.txt", "w+");
-
-    connections *tmp = l;
-
-    while (tmp)
-    {
-        if ((lineNumber % 3) == 1)
-        {
-            fprintf(file, "%s\n", (*tmp).connection.from);
-            lineNumber++;
-        }
-        if ((lineNumber % 3) == 2)
-        {
-            fprintf(file, "%s\n", (*tmp).connection.to);
-            lineNumber++;
-        }
-        if ((lineNumber % 3) == 0)
-        {
-            fprintf(file, "%i\n", (*tmp).connection.distance);
-            lineNumber++;
-        }
-
-        tmp = (*tmp).next;
-    }
-
-    fclose(file);
-
-}
-
-connections *import(connections *l)
-{
-    int lineNumber = 1;
-
-    char *fromIn;
-    char *toIn;
-    int distanceIn;
-
-    fromIn = malloc(sizeof(char *));
-    toIn = malloc(sizeof(char *));
-
-    char buf[256];
-
-    FILE *file = fopen("flights.txt", "r");
-
-    printf("Importing connectionns....\n");
-
-    while (fgets(buf, sizeof(buf), file))
-    {
-        if ((lineNumber % 3) == 1)
-        {
-            strcpy(fromIn, buf);
-
-            strtok(fromIn, "\n");
-            printf("from: %s\n", fromIn);
-        }
-        if ((lineNumber % 3) == 2)
-        {
-            strcpy(toIn, buf);
-
-            strtok(toIn, "\n");
-            printf("to: %s\n", toIn);
-        }
-        if ((lineNumber % 3) == 0)
-        {
-            distanceIn = atoi(buf);
-            printf("distance: %i\n", distanceIn);
-
-            printf("Adding connection from %s, to %s with distance %i\n", fromIn, toIn, distanceIn);
-
-            l = add(l, fromIn, toIn, distanceIn);
-        }
-
-        lineNumber++;
-    }
-
-    fclose(file);
-
-    return l;
-}
-
-connections *initialize(connections *l)
-{
-    printf("Initializing database....\n");
-
-    l = add(l, "NEW YORK", "LAS VEGAS", 1000);
-    l = add(l, "WARSAW", "GDANSK", 600);
-    l = add(l, "WARSAW", "KRAKOW", 800);
-    l = add(l, "KRAKOW", "KATOWICE", 200);
-
-    return l;
-}
-
 
 #pragma clang diagnostic pop
