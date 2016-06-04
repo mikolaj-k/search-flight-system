@@ -19,8 +19,8 @@
 
 struct FLIGHT
 {
-    char *from;
-    char *to;
+    char from[20];
+    char to[20];
     int distance;
     int skip; //for backtracking
 };
@@ -39,33 +39,33 @@ typedef struct connections connections;
 * FUNCTION DECLARATIONS
 **********************************************************************/
 
-void toUpper(char *text);
+void toUpper(char *text); //done
 
-void showMenuChoice();
+void showMenuChoice(); //done
 
-void exportData(connections *l);
+void exportData(connections *l); //done
 
-void show(connections *l);
+void show(connections *l); //done
 
 connections *initialize(connections *l); //for testing database
 
-connections *import(connections *l);
+connections *import(connections *l); //done
 
 connections *search(connections *l, char *from, char *to);
 
-connections *direct(connections *l, char *from, char *to);
+connections *direct(connections *l, char *from, char *to); // done
 
 connections *nonDirect(connections *l, char *from, char *to);
 
-connections *add(connections *l, char *from, char *to, int distance);
+connections *add(connections *l, char *from, char *to, int distance); // done
 
-connections *addOneWay(connections *l, char *from, char *to, int distance);
+connections *addOneWay(connections *l, char *from, char *to, int distance); //done
 
-connections *addReverse(connections *l, char *from, char *to, int distance);
+connections *addReverse(connections *l, char *from, char *to, int distance); //done
 
-connections *insert(connections *l, char *from, char *to, int distance);
+connections *insert(connections *l, char *from, char *to, int distance); //done
 
-connections *delete(connections *l, int n);
+connections *delete(connections *l, int n); //done
 
 
 /**********************************************************************
@@ -251,30 +251,33 @@ void show(connections *l)
 {
     int numberOfFlights = 1;
 
-    printf("Showing connections...\n");
-
     connections *tmp = l;
 
     printf("AVAILABLE CONNECTIONS: \n");
 
-    while (tmp)
+    if (tmp == NULL)
     {
-        printf("%i.\n", numberOfFlights);
-        printf("\tFrom: %s\n", (*tmp).connection.from);
-        printf("\tTo: %s\n", (*tmp).connection.to);
-        printf("\tDistance: %i\n", (*tmp).connection.distance);
-        printf("\n");
+        printf("No connections available.");
+    }
+    else
+    {
+        while (tmp)
+        {
+            printf("%i.\n", numberOfFlights);
+            printf("\tFrom: %s\n", (*tmp).connection.from);
+            printf("\tTo: %s\n", (*tmp).connection.to);
+            printf("\tDistance: %i\n", (*tmp).connection.distance);
+            printf("\n");
 
-        numberOfFlights++;
+            numberOfFlights++;
 
-        tmp = (*tmp).next;
+            tmp = (*tmp).next;
+        }
     }
 }
 
 connections *initialize(connections *l)
 {
-    printf("Initializing database....\n");
-
     l = add(l, "NEW YORK", "LAS VEGAS", 1000);
     l = add(l, "WARSAW", "GDANSK", 600);
     l = add(l, "WARSAW", "KRAKOW", 800);
@@ -291,39 +294,39 @@ connections *import(connections *l)
     char *toIn;
     int distanceIn;
 
-    fromIn = malloc(sizeof(char *));
-    toIn = malloc(sizeof(char *));
+    fromIn = (char *) malloc(sizeof(char *));
+    toIn = (char *) malloc(sizeof(char *));
+
+    if ((fromIn == NULL) || (toIn == NULL))
+    {
+        printf("MEMORY PROBLEM. CONTACT IT SUPPORT!");
+        exit(-1);
+    }
 
     char buf[256];
+    char bufTransfer[256];
 
     FILE *file = fopen("flights.txt", "r");
-
-    printf("Importing connectionns....\n");
 
     while (fgets(buf, sizeof(buf), file))
     {
         if ((lineNumber % 3) == 1)
         {
-            strcpy(fromIn, buf);
-
+            strcpy(bufTransfer, buf);
+            strcpy(fromIn, bufTransfer);
             strtok(fromIn, "\n");
-            printf("from: %s\n", fromIn);
         }
         if ((lineNumber % 3) == 2)
         {
-            strcpy(toIn, buf);
-
+            strcpy(bufTransfer, buf);
+            strcpy(toIn, bufTransfer);
             strtok(toIn, "\n");
-            printf("to: %s\n", toIn);
         }
         if ((lineNumber % 3) == 0)
         {
             distanceIn = atoi(buf);
-            printf("distance: %i\n", distanceIn);
-
-            printf("Adding connection from %s, to %s with distance %i\n", fromIn, toIn, distanceIn);
-
-            l = add(l, fromIn, toIn, distanceIn);
+            printf("Adding connection from %s to %s with distance %i\n", fromIn, toIn, distanceIn);
+            l = addOneWay(l, fromIn, toIn, distanceIn);
         }
 
         lineNumber++;
@@ -352,8 +355,6 @@ connections *search(connections *l, char *from, char *to)
 
 connections *direct(connections *l, char *from, char *to)
 {
-    printf("Searching direct connection from: %s to: %s...\n", from, to);
-
     connections *tmp = l;
     connections *found = NULL;
 
@@ -381,8 +382,7 @@ connections *direct(connections *l, char *from, char *to)
 
 connections *nonDirect(connections *l, char *from, char *to)
 {
-    printf("Searching non-direct connection from: %s to: %s...\n", from, to);
-
+    //TODO
     return NULL;
 }
 
@@ -412,12 +412,10 @@ connections *addOneWay(connections *l, char *from, char *to, int distance)
 {
     FLIGHT new;
 
-    new.from = from;
-    new.to = to;
+    strcpy(new.from, from);
+    strcpy(new.to, to);
     new.distance = distance;
     new.skip = 0;
-
-    //printf("Adding connection from: %s to: %s with distance: %i...\n", new.from, new.to, new.distance);
 
     connections *tmp;
 
@@ -429,8 +427,8 @@ connections *addOneWay(connections *l, char *from, char *to, int distance)
         exit(-1);
     }
 
-    (*tmp).connection.from = new.from;
-    (*tmp).connection.to = new.to;
+    strcpy((*tmp).connection.from, new.from);
+    strcpy((*tmp).connection.to, new.to);
     (*tmp).connection.distance = new.distance;
     (*tmp).next = l;
 
@@ -442,12 +440,11 @@ connections *addReverse(connections *l, char *from, char *to, int distance)
 {
     FLIGHT new;
 
-    new.from = from;
-    new.to = to;
+
+    strcpy(new.from, from);
+    strcpy(new.to, to);
     new.distance = distance;
     new.skip = 0;
-
-    //printf("Adding connection from: %s to: %s with distance: %i...\n", new.from, new.to, new.distance);
 
     connections *tmp;
 
@@ -459,8 +456,8 @@ connections *addReverse(connections *l, char *from, char *to, int distance)
         exit(-1);
     }
 
-    (*tmp).connection.from = new.from;
-    (*tmp).connection.to = new.to;
+    strcpy((*tmp).connection.from, new.from);
+    strcpy((*tmp).connection.to, new.to);
     (*tmp).connection.distance = new.distance;
     (*tmp).next = l;
 
