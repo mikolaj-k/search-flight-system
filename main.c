@@ -1,15 +1,7 @@
-//CLION SHIT
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wreturn-stack-address"
-
-//dla maca
 #include <stddef.h>
 #include <stdbool.h>
 #include <memory.h>
 #include <ctype.h>
-
-//dla windowsa
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -22,9 +14,7 @@ struct FLIGHT
     char from[20];
     char to[20];
     int distance;
-    int skip; //for backtracking
 };
-
 typedef struct FLIGHT FLIGHT;
 
 struct connections
@@ -32,41 +22,35 @@ struct connections
     FLIGHT connection;
     struct connections *next;
 };
-
 typedef struct connections connections;
 
 /**********************************************************************
 * FUNCTION DECLARATIONS
 **********************************************************************/
 
-void toUpper(char *text); //done
+void toUpper(char *text);
 
-void showMenuChoice(); //done
+void showMenuChoice();
 
-void exportData(connections *l); //done
+void exportData(connections *l);
 
-void show(connections *l); //done
+void show(connections *l);
 
-connections *initialize(connections *l); //for testing database
-
-connections *import(connections *l); //done
+connections *import(connections *l);
 
 connections *search(connections *l, char *from, char *to);
 
-connections *direct(connections *l, char *from, char *to); // done
+connections *direct(connections *l, char *from, char *to);
 
-connections *nonDirect(connections *l, char *from, char *to);
+connections *nonDirect(connections *l, char from[20], char to[20]);
 
-connections *add(connections *l, char *from, char *to, int distance); // done
+connections *add(connections *l, char *from, char *to, int distance);
 
-connections *addOneWay(connections *l, char *from, char *to, int distance); //done
+connections *addOneWay(connections *l, char *from, char *to, int distance);
 
-connections *addReverse(connections *l, char *from, char *to, int distance); //done
+connections *insert(connections *l, char *from, char *to, int distance);
 
-connections *insert(connections *l, char *from, char *to, int distance); //done
-
-connections *delete(connections *l, int n); //done
-
+connections *delete(connections *l, int n);
 
 /**********************************************************************
 * MAIN
@@ -85,18 +69,16 @@ int main(void)
     connections *database = NULL;
     connections *searchResult = NULL;
 
-    //database = initialize(database);
+    database = import(database);
 
     while (true)
     {
-
         showMenuChoice();
         scanf(" %c", &choice);
 
         switch (choice)
         {
             case '1':
-
                 gets(clean);
 
                 printf("From: ");
@@ -111,18 +93,20 @@ int main(void)
 
                 searchResult = search(database, from, to);
 
-                if (searchResult != NULL)
+                if (searchResult == NULL)
                 {
-                    show(searchResult);
+                    printf("There is no connection between %s and %s", from, to);
+
+                    getchar();
+
                 }
                 else
                 {
-                    printf("There is no connection between %s and %s", from, to);
+                    show(searchResult);
                 }
                 break;
 
             case '2':
-
                 gets(clean);
 
                 printf("From: ");
@@ -135,7 +119,6 @@ int main(void)
 
                 toUpper(to);
 
-
                 printf("Distance:");
                 scanf(" %i", &distance);
 
@@ -144,10 +127,9 @@ int main(void)
                 break;
 
             case '3':
-
                 show(database);
 
-                printf("Which filght you want to delete: ");
+                printf("Which flight you want to delete: ");
                 scanf(" %i", &toDelete);
 
                 toDelete--;
@@ -172,7 +154,6 @@ int main(void)
                 break;
 
             case 'q':
-
                 printf("Thank you for using our airlines system!\n");
                 exit(2137);
 
@@ -218,7 +199,9 @@ void exportData(connections *l)
 
     printf("Exporting connections....\n");
 
-    FILE *file = fopen("flights.txt", "w+");
+    getchar();
+
+    FILE *file = fopen("/Users/mikolajklimas/Desktop/search-flight-system/flights.txt", "w+");
 
     connections *tmp = l;
 
@@ -244,7 +227,6 @@ void exportData(connections *l)
     }
 
     fclose(file);
-
 }
 
 void show(connections *l)
@@ -274,16 +256,7 @@ void show(connections *l)
             tmp = (*tmp).next;
         }
     }
-}
-
-connections *initialize(connections *l)
-{
-    l = add(l, "NEW YORK", "LAS VEGAS", 1000);
-    l = add(l, "WARSAW", "GDANSK", 600);
-    l = add(l, "WARSAW", "KRAKOW", 800);
-    l = add(l, "KRAKOW", "KATOWICE", 200);
-
-    return l;
+    getchar();
 }
 
 connections *import(connections *l)
@@ -306,7 +279,7 @@ connections *import(connections *l)
     char buf[256];
     char bufTransfer[256];
 
-    FILE *file = fopen("flights.txt", "r");
+    FILE *file = fopen("/Users/mikolajklimas/Desktop/search-flight-system/flights.txt", "r");
 
     while (fgets(buf, sizeof(buf), file))
     {
@@ -333,6 +306,8 @@ connections *import(connections *l)
     }
 
     fclose(file);
+
+    getchar();
 
     return l;
 }
@@ -370,19 +345,45 @@ connections *direct(connections *l, char *from, char *to)
 
             if (!decision)
             {
-                found = insert(found, (*tmp).connection.from, (*tmp).connection.to, (*tmp).connection.distance);
+                found = addOneWay(found, (*tmp).connection.from, (*tmp).connection.to, (*tmp).connection.distance);
+
                 return found;
             }
         }
 
         tmp = (*tmp).next;
     }
-    return found;
+    return NULL;
 }
 
-connections *nonDirect(connections *l, char *from, char *to)
+connections *nonDirect(connections *l, char from[20], char to[20])
 {
-    //TODO
+    connections *tmp = l;
+    connections *found = NULL;
+    char anywhere[20];
+
+    int decision;
+
+    while (tmp)
+    {
+        decision = strcmp((*tmp).connection.from, from);
+
+        if (!decision)
+        {
+            strcpy(anywhere, (*tmp).connection.to);
+
+            found = direct(l, anywhere, to);
+
+            if (found != NULL)
+            {
+                found = addOneWay(found, (*tmp).connection.from, (*tmp).connection.to, (*tmp).connection.distance);
+
+                return found;
+            }
+        }
+        tmp = (*tmp).next;
+    }
+
     return NULL;
 }
 
@@ -398,12 +399,14 @@ connections *add(connections *l, char *from, char *to, int distance)
     if (choice == 'y')
     {
         l = addOneWay(l, from, to, distance);
-        l = addReverse(l, to, from, distance);
+        l = insert(l, to, from, distance);
     }
     else if (choice == 'n')
     {
         l = addOneWay(l, from, to, distance);
     }
+
+    getchar();
 
     return l;
 }
@@ -415,36 +418,6 @@ connections *addOneWay(connections *l, char *from, char *to, int distance)
     strcpy(new.from, from);
     strcpy(new.to, to);
     new.distance = distance;
-    new.skip = 0;
-
-    connections *tmp;
-
-    tmp = (connections *) malloc(sizeof(connections));
-
-    if (tmp == NULL)
-    {
-        printf("MEMORY PROBLEM. CONTACT IT SUPPORT!");
-        exit(-1);
-    }
-
-    strcpy((*tmp).connection.from, new.from);
-    strcpy((*tmp).connection.to, new.to);
-    (*tmp).connection.distance = new.distance;
-    (*tmp).next = l;
-
-
-    return tmp;
-}
-
-connections *addReverse(connections *l, char *from, char *to, int distance)
-{
-    FLIGHT new;
-
-
-    strcpy(new.from, from);
-    strcpy(new.to, to);
-    new.distance = distance;
-    new.skip = 0;
 
     connections *tmp;
 
@@ -472,13 +445,6 @@ connections *insert(connections *l, char *from, char *to, int distance)
         return addOneWay(l, from, to, distance);
     }
 
-    FLIGHT newFlight;
-
-    strcpy(newFlight.from, from);
-    strcpy(newFlight.to, from);
-    newFlight.distance = distance;
-
-
     connections *wsk;
 
     wsk = l;
@@ -496,8 +462,10 @@ connections *insert(connections *l, char *from, char *to, int distance)
         exit(-1);
     }
 
+    strcpy((*newConnection).connection.from, from);
+    strcpy((*newConnection).connection.to, to);
+    (*newConnection).connection.distance = distance;
     (*newConnection).next = NULL;
-    (*newConnection).connection = newFlight;
 
     (*wsk).next = newConnection;
 
@@ -546,7 +514,7 @@ connections *delete(connections *l, int n)
         }
     }
 
+    getchar();
+
     return l;
 }
-
-#pragma clang diagnostic pop
