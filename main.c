@@ -181,6 +181,8 @@ void toUpper(char text[20])
 
 void showMenuChoice()
 {
+    //system("cls"); //windows
+    system("clear"); //mac
     printf("\nWelcome in our airlines system.\n");
     printf("*******************************\n");
     printf("[1]. Search for connection\n");
