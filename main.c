@@ -203,7 +203,7 @@ void exportData(connections *l)
 
     getchar();
 
-    FILE *file = fopen("/Users/mikolajklimas/Desktop/search-flight-system/flights.txt", "w+");
+    FILE *file = fopen("flights.txt", "w+");
 
     connections *tmp = l;
 
@@ -281,7 +281,7 @@ connections *import(connections *l)
     char buf[256];
     char bufTransfer[256];
 
-    FILE *file = fopen("/Users/mikolajklimas/Desktop/search-flight-system/flights.txt", "r");
+    FILE *file = fopen("flights.txt", "r");
 
     while (fgets(buf, sizeof(buf), file))
     {
