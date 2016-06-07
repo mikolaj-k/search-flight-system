@@ -203,7 +203,7 @@ void exportData(connections *l)
 
     getchar();
 
-    FILE *file = fopen("flights.txt", "w+");
+    FILE *file = fopen("flightsExport.txt", "w+");
 
     connections *tmp = l;
 
